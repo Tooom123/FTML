@@ -1,0 +1,406 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\geometry{margin=2.4cm}
+
+\newcommand{\unit}[1]{\,\mathrm{#1}}
+
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,urlcolor=blue!60!black}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\fstar}{f^{*}}
+\newcommand{\Risk}{\mathcal{R}}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Tr}{tr}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\med}{med}
+
+\theoremstyle{plain}
+\newtheorem{prop}{Proposition}
+
+\title{\textbf{FTML 2026}\\[2mm]
+\large Exercices 1 à 5}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\noindent
+Ce document répond aux exercices 1 à 5 du projet. Les exercices 1, 2 et 3 sont
+essentiellement mathématiques; les exercices 4 et 5 sont des exercices de code.
+Sauf mention contraire, on note
+$\lVert\cdot\rVert=\lVert\cdot\rVert_2$.
+
+\tableofcontents
+
+% =====================================================================
+\section{Estimateur de Bayes et risque de Bayes}
+% =====================================================================
+
+\subsection*{Question 1: Un cadre d'apprentissage et son prédicteur de Bayes}
+
+\paragraph{Cadre proposé.} On choisit un problème de régression issu de la
+physique, différent de ceux vus en cours.
+\begin{itemize}[nosep]
+  \item \textbf{Espace d'entrée} : $\X=[15,35]\subset\R$, une température
+        ambiante exprimée en degrés Celsius.
+  \item \textbf{Espace de sortie} : $\Y=\R$, la consommation électrique d'un
+        climatiseur sur une heure, exprimée en kilowattheures.
+  \item \textbf{Variable aléatoire $(X,Y)$} : on tire
+        $X\sim\mathcal{U}([15,35])$ et on pose
+        \[
+            Y = aX + b + \varepsilon,
+            \qquad \varepsilon\sim\mathcal{N}(0,\sigma^2)\ \text{indépendant de }X,
+        \]
+        avec $a=0{,}3~\text{kWh/\textdegree C}$, $b=0{,}5~\text{kWh}$ et
+        $\sigma=0{,}5~\text{kWh}$. La loi jointe est donc celle d'un couple
+        $(X, aX+b+\varepsilon)$.
+  \item \textbf{Fonction de perte} : la perte quadratique
+        $\ell(y,z)=(y-z)^2$.
+\end{itemize}
+
+\paragraph{Prédicteur de Bayes.} Pour la perte quadratique, le prédicteur de
+Bayes est l'espérance conditionnelle. Pour tout $x\in\X$,
+\[
+    \fstar(x)=\argmin_{z\in\R}\E\!\left[(Y-z)^2\mid X=x\right]
+            =\E[Y\mid X=x]
+            =a x + b .
+\]
+En effet, $\E[Y\mid X=x]=\E[aX+b+\varepsilon\mid X=x]=ax+b+\E[\varepsilon]=ax+b$,
+puisque $\varepsilon$ est centré et indépendant de $X$.
+
+\paragraph{Risque de Bayes.} Par définition, $R^{*}=\Risk(\fstar)=\E\big[(Y-\fstar(X))^2\big]$.
+Or $Y-\fstar(X)=aX+b+\varepsilon-(aX+b)=\varepsilon$, d'où
+\[
+    \boxed{\,R^{*}=\E[\varepsilon^2]=\Var(\varepsilon)=\sigma^2=0{,}25~\text{kWh}^2.\,}
+\]
+Le risque de Bayes est exactement la variance du bruit : c'est l'erreur
+irréductible, due à la partie de $Y$ qui n'est pas expliquée par $X$.
+
+\subsection*{Question 2: Estimateur naïf et vérification par simulation}
+
+On choisit comme estimateur alternatif le \emph{prédicteur constant}
+$\tilde f(x)=c$, où $c$ est calibré comme la moyenne empirique des $y$ sur un
+grand échantillon d'entraînement (donc $c\approx\E[Y]$). Cet estimateur ignore
+totalement l'entrée $x$ ; il est donc clairement différent de $\fstar$. Son
+risque réel vaut
+\[
+    \Risk(\tilde f)=\E\big[(Y-\E[Y])^2\big]=\Var(Y)
+                  =a^2\Var(X)+\sigma^2 ,
+\]
+avec $\Var(X)=\frac{(35-15)^2}{12}=\frac{400}{12}\approx 33{,}33$, soit
+$\Risk(\tilde f)\approx 0{,}09\times 33{,}33+0{,}25\approx 3{,}25~\text{kWh}^2$.
+
+\paragraph{Simulation.} Le script \texttt{exercice1/simulation.py} estime le
+risque réel de chaque prédicteur par son risque empirique sur un jeu de test de
+$2\times10^{6}$ points. On obtient :
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+ & Valeur théorique & Risque empirique test \\
+\midrule
+$\fstar$ (Bayes)        & $R^{*}=0{,}25$ & $0{,}2498$ \\
+$\tilde f$ (constant)   & $3{,}25$       & $3{,}2514$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Conclusion.} L'erreur de généralisation estimée de $\fstar$
+($0{,}2498$) est bien inférieure à celle de $\tilde f$ ($3{,}2514$), et elle est
+très proche du risque de Bayes théorique ($0{,}25$), l'écart
+($\approx 2\times10^{-4}$) provenant uniquement de la taille finie de
+l'échantillon de test. Cela confirme à la fois que $\fstar$ est optimal et que
+le risque empirique sur un grand jeu de test est un bon estimateur du risque
+réel.
+
+% =====================================================================
+\section{Risque de Bayes avec la perte absolue}
+% =====================================================================
+
+\subsection*{Question 0: Dérivée nulle sans extremum local}
+
+On prend $f:\R\to\R,\ f(x)=x^3$. Alors $f'(x)=3x^2$, donc $f'(0)=0$. Pourtant
+$0$ n'est pas un extremum local : pour tout $\delta>0$, $f(-\delta)=-\delta^3<0=f(0)<\delta^3=f(\delta)$,
+donc $f$ prend des valeurs strictement inférieures \emph{et} strictement
+supérieures à $f(0)$ dans tout voisinage de $0$ ($0$ est un point d'inflexion).
+
+\medskip
+\noindent\emph{Remarque (anticipation de la Q2).} Une dérivée nulle n'est qu'une
+condition \emph{nécessaire} d'extremum, pas suffisante. Dans la Q2, on ne se
+contentera donc pas d'annuler $g'$ : on montrera que $g$ est \emph{convexe},
+ce qui garantit qu'un point critique est bien un minimum global.
+
+\subsection*{Question 1: Un cas où $\fstar_{\ell_\text{abs}}\neq\fstar_{\ell_\text{sq}}$}
+
+\paragraph{Idée.} Si la loi conditionnelle $Y\mid X=x$ est symétrique, sa moyenne
+et sa médiane coïncident, donc les deux prédicteurs de Bayes sont égaux. Pour les
+distinguer, il faut une loi conditionnelle \textbf{asymétrique}.
+
+\paragraph{Cadre.} On prend $X\sim\mathcal{U}([0,1])$ et
+\[
+    Y=2X+Z,\qquad Z\sim\mathcal{E}(1)\ \text{(loi exponentielle de paramètre 1)},
+\]
+$Z$ indépendant de $X$. La loi exponentielle est asymétrique : pour $Z\sim\mathcal{E}(1)$,
+$\E[Z]=1$ et $\med(Z)=\ln 2\approx 0{,}693$.
+
+D'après le cours et la Q2 ci-dessous, on a pour chaque $x$
+\[
+    \fstar_{\ell_\text{sq}}(x)=\E[Y\mid X=x]=2x+1,
+    \qquad
+    \fstar_{\ell_\text{abs}}(x)=\med(Y\mid X=x)=2x+\ln 2 .
+\]
+Ces deux fonctions diffèrent (d'une constante $1-\ln2\approx0{,}307$), donc
+$\fstar_{\ell_\text{abs}}\neq\fstar_{\ell_\text{sq}}$.
+
+\paragraph{Calcul analytique du risque absolu.} Pour les deux prédicteurs, la
+partie $2x$ se simplifie : $\Risk_{\ell_\text{abs}}(g)=\E\big[\lvert Y-g(X)\rvert\big]=\E\big[\lvert Z-c\rvert\big]$
+où $c$ est la constante ajoutée ($c=1$ pour la moyenne, $c=\ln2$ pour la médiane).
+Un calcul direct donne, pour $Z\sim\mathcal{E}(1)$ et $c>0$,
+\[
+    \E\lvert Z-c\rvert=\int_0^{\infty}\lvert z-c\rvert e^{-z}\,dz = c-1+2e^{-c}.
+\]
+On en déduit
+\[
+    \Risk_{\ell_\text{abs}}(\fstar_{\ell_\text{abs}})=\E\lvert Z-\ln2\rvert=\ln 2\approx 0{,}6931,
+    \qquad
+    \Risk_{\ell_\text{abs}}(\fstar_{\ell_\text{sq}})=\E\lvert Z-1\rvert=\tfrac{2}{e}\approx 0{,}7358 .
+\]
+Comme attendu, la médiane fait strictement mieux que la moyenne pour la perte
+absolue.
+
+\paragraph{Vérification par simulation.} Le script
+\texttt{exercice2/simulation.py} estime ces risques sur $5\times10^{6}$ points :
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Prédicteur & $\Risk_{\ell_\text{abs}}$ (simu) & $\Risk_{\ell_\text{abs}}$ (théo) & $\Risk_{\ell_\text{sq}}$ (simu)\\
+\midrule
+$\fstar_{\ell_\text{abs}}$ (médiane $=2x+\ln2$) & $0{,}6935$ & $0{,}6931$ & $1{,}0959$\\
+$\fstar_{\ell_\text{sq}}$ (moyenne $=2x+1$)     & $0{,}7360$ & $0{,}7358$ & $1{,}0015$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Conclusion.} La médiane minimise le risque absolu
+($0{,}6935<0{,}7360$) tandis que la moyenne minimise le risque quadratique
+($1{,}0015<1{,}0959$) : chaque perte a bien son propre prédicteur de Bayes, et
+ils diffèrent dès que la loi conditionnelle est asymétrique.
+
+\subsection*{Question 2: Cas général : le prédicteur de Bayes de la perte absolue est la médiane}
+
+On fixe $x\in\X$ et on note $p=p_{Y\mid X=x}$ la densité conditionnelle (continue),
+$F(z)=\int_{-\infty}^{z}p(y)\,dy$ la fonction de répartition associée. On veut
+minimiser
+\[
+    g(z)=\int_{\R}\lvert y-z\rvert\,p(y)\,dy
+        =\underbrace{\int_{-\infty}^{z}(z-y)\,p(y)\,dy}_{g_1(z)}
+        +\underbrace{\int_{z}^{+\infty}(y-z)\,p(y)\,dy}_{g_2(z)} .
+\]
+\emph{Bonne définition.} L'hypothèse « $Y\mid X=x$ admet un moment d'ordre 1 »
+signifie $\int_{\R}\lvert y\rvert\,p(y)\,dy<\infty$. Comme
+$\lvert y-z\rvert\le \lvert y\rvert+\lvert z\rvert$, l'intégrale définissant
+$g(z)$ converge pour tout $z$ : $g$ est bien définie sur $\R$.
+
+\paragraph{Dérivation.} Les deux intégrales ont une borne dépendant de $z$
+\emph{et} un intégrande dépendant de $z$. On applique la règle de Leibniz. Pour
+$g_1$, le terme de bord est $(z-y)p(y)\big|_{y=z}=0$, donc
+\[
+    g_1'(z)=\underbrace{(z-z)p(z)}_{=0}+\int_{-\infty}^{z}\frac{\partial}{\partial z}(z-y)\,p(y)\,dy
+           =\int_{-\infty}^{z}p(y)\,dy=F(z).
+\]
+De même pour $g_2$, le terme de bord $(y-z)p(y)\big|_{y=z}=0$, et
+\[
+    g_2'(z)=-\underbrace{(z-z)p(z)}_{=0}-\int_{z}^{+\infty}p(y)\,dy
+           =-\big(1-F(z)\big).
+\]
+Donc
+\[
+    g'(z)=F(z)-\big(1-F(z)\big)=2F(z)-1 .
+\]
+
+\paragraph{Convexité et minimisation.} Comme $p$ est continue, $F$ est dérivable
+et $g''(z)=2F'(z)=2p(z)\ge 0$. Ainsi $g$ est \textbf{convexe}. Un point critique
+est donc un minimum global (c'est ici qu'intervient la mise en garde de la Q0 :
+la convexité transforme la condition nécessaire $g'(z)=0$ en condition
+suffisante). On résout
+\[
+    g'(z)=0\iff 2F(z)-1=0\iff F(z)=\tfrac12 .
+\]
+La valeur $z$ telle que $F(z)=\frac12$ est précisément une \textbf{médiane} de la
+loi conditionnelle. D'où
+\[
+    \boxed{\,\fstar_{\ell_\text{abs}}(x)=\med\big(Y\mid X=x\big).\,}
+\]
+(Si plusieurs $z$ vérifient $F(z)=\frac12$, ils forment un intervalle sur lequel
+$g$ est constante et minimale ; tout point de cet intervalle convient.)
+
+% =====================================================================
+\section{Espérance du risque empirique pour l'OLS}
+% =====================================================================
+
+On se place dans le modèle linéaire à design fixe :
+$y=X\theta^{*}+\varepsilon$ avec $\E[\varepsilon]=0$,
+$\Var(\varepsilon)=\sigma^2 I_n$, $X\in\R^{n\times d}$ injective ($d\le n$), et
+$\hat\theta=(X^TX)^{-1}X^Ty$. On rappelle l'objectif (Proposition 1) :
+\[
+    \E\big[R_n(\hat\theta)\big]=\frac{n-d}{n}\,\sigma^2,
+    \qquad\text{où } R_n(\theta)=\tfrac1n\lVert y-X\theta\rVert^2 .
+\]
+\emph{Remarque de notation.} Il s'agit bien ici de l'espérance du risque
+\emph{empirique} (sur l'échantillon d'apprentissage) $R_n(\hat\theta)$, que les
+questions 2 à 6 calculent explicitement, et qui vaut $\frac{n-d}{n}\sigma^2$
+(à distinguer du risque de design fixe $R_X(\hat\theta)$, dont l'espérance vaut
+$\frac{n+d}{n}\sigma^2$).
+
+\subsection*{Question 1: Comparaison au risque de Bayes}
+
+Dans ce modèle, le meilleur prédicteur possible est $\theta^{*}$, et son risque
+(de design fixe) est $R_X(\theta^{*})=\sigma^2$ : c'est le \textbf{risque de
+Bayes}, égal à la variance du bruit irréductible. On compare :
+\[
+    \E\big[R_n(\hat\theta)\big]=\frac{n-d}{n}\,\sigma^2
+    \;=\;\Big(1-\frac{d}{n}\Big)\sigma^2
+    \;\le\;\sigma^2 = R^{*}.
+\]
+\textbf{Le risque empirique espéré est plus petit que le risque de Bayes.}
+Interprétation : c'est l'\emph{optimisme} de l'erreur d'apprentissage. L'OLS
+ajuste ses $d$ paramètres sur les données d'entraînement et capte donc une partie
+du bruit de ces données ; l'erreur mesurée \emph{sur l'échantillon d'apprentissage}
+sous-estime l'erreur réelle, exactement d'un facteur $\frac{d}{n}\sigma^2$.
+\begin{itemize}[nosep]
+  \item Quand $d\ll n$ : $\E[R_n(\hat\theta)]\to\sigma^2$, l'erreur d'apprentissage
+        est une bonne estimation de l'erreur réelle.
+  \item Quand $d\to n$ : $\E[R_n(\hat\theta)]\to 0$, le modèle interpole les
+        données (sur-apprentissage) : l'erreur d'entraînement devient nulle bien
+        que l'erreur réelle ne le soit pas.
+\end{itemize}
+
+\subsection*{Question 2: Réécriture avec la matrice de projection}
+
+On note $P=X(X^TX)^{-1}X^T$ la matrice de projection orthogonale sur $\mathrm{Im}(X)$.
+Les prédictions sont $X\hat\theta=X(X^TX)^{-1}X^Ty=Py$, donc le résidu vaut
+$y-X\hat\theta=(I_n-P)y$. En substituant $y=X\theta^{*}+\varepsilon$ :
+\[
+    (I_n-P)y=(I_n-P)X\theta^{*}+(I_n-P)\varepsilon .
+\]
+Or $(I_n-P)X=X-X(X^TX)^{-1}X^TX=X-X=0$, donc le premier terme est nul. Ainsi
+$y-X\hat\theta=(I_n-P)\varepsilon$ et
+\[
+    R_n(\hat\theta)=\frac1n\lVert(I_n-P)\varepsilon\rVert^2
+    \;\Longrightarrow\;
+    \E\big[R_n(\hat\theta)\big]
+       =\E_\varepsilon\!\left[\frac1n\big\lVert\big(I_n-X(X^TX)^{-1}X^T\big)\varepsilon\big\rVert^2\right].
+\]
+
+\subsection*{Question 3: $\sum_{i,j}A_{ij}^2=\Tr(A^TA)$}
+
+Soit $A\in\R^{n\times n}$. Le coefficient diagonal $j$ de $A^TA$ est
+$(A^TA)_{jj}=\sum_{i=1}^{n}(A^T)_{ji}A_{ij}=\sum_{i=1}^{n}A_{ij}^2$. En sommant sur $j$ :
+\[
+    \Tr(A^TA)=\sum_{j=1}^{n}(A^TA)_{jj}=\sum_{j=1}^{n}\sum_{i=1}^{n}A_{ij}^2
+            =\sum_{(i,j)\in[1,n]^2}A_{ij}^2 .
+\]
+
+\subsection*{Question 4: $\E_\varepsilon[\frac1n\lVert A\varepsilon\rVert^2]=\frac{\sigma^2}{n}\Tr(A^TA)$}
+
+On développe $\lVert A\varepsilon\rVert^2=(A\varepsilon)^T(A\varepsilon)=\varepsilon^TA^TA\varepsilon
+=\sum_{i,j}(A^TA)_{ij}\,\varepsilon_i\varepsilon_j$. Par linéarité de l'espérance,
+et comme $\E[\varepsilon_i\varepsilon_j]=\sigma^2\delta_{ij}$ (bruit centré,
+indépendant, de variance $\sigma^2$) :
+\[
+    \E_\varepsilon\big[\lVert A\varepsilon\rVert^2\big]
+      =\sum_{i,j}(A^TA)_{ij}\,\E[\varepsilon_i\varepsilon_j]
+      =\sigma^2\sum_{i}(A^TA)_{ii}
+      =\sigma^2\,\Tr(A^TA).
+\]
+En divisant par $n$ : $\E_\varepsilon\big[\frac1n\lVert A\varepsilon\rVert^2\big]=\frac{\sigma^2}{n}\Tr(A^TA)$.
+
+\subsection*{Question 5: $A^TA=A$ pour $A=I_n-X(X^TX)^{-1}X^T$}
+
+\textbf{$A$ est symétrique.} En notant $P=X(X^TX)^{-1}X^T$, et puisque
+$(X^TX)^{-1}$ est symétrique (inverse d'une matrice symétrique),
+$P^T=X\big((X^TX)^{-1}\big)^TX^T=X(X^TX)^{-1}X^T=P$. Donc $A^T=I_n-P^T=I_n-P=A$.
+
+\textbf{$A$ est idempotente.} On a $P^2=X(X^TX)^{-1}\underbrace{X^TX(X^TX)^{-1}}_{=I_d}X^T=X(X^TX)^{-1}X^T=P$, d'où
+\[
+    A^2=(I_n-P)^2=I_n-2P+P^2=I_n-2P+P=I_n-P=A .
+\]
+En combinant : $A^TA=A\,A=A^2=A$. \hfill$\square$
+
+\subsection*{Question 6: Conclusion}
+
+En appliquant la Q4 avec la matrice $A=I_n-X(X^TX)^{-1}X^T$, puis la Q5
+($A^TA=A$) :
+\[
+    \E\big[R_n(\hat\theta)\big]
+      =\E_\varepsilon\Big[\tfrac1n\lVert A\varepsilon\rVert^2\Big]
+      =\frac{\sigma^2}{n}\Tr(A^TA)
+      =\frac{\sigma^2}{n}\Tr(A).
+\]
+Il reste à calculer $\Tr(A)$. Par la propriété de cyclicité de la trace,
+$\Tr(P)=\Tr\big(X(X^TX)^{-1}X^T\big)=\Tr\big((X^TX)^{-1}X^TX\big)=\Tr(I_d)=d$. Donc
+\[
+    \Tr(A)=\Tr(I_n)-\Tr(P)=n-d,
+    \qquad
+    \boxed{\,\E\big[R_n(\hat\theta)\big]=\frac{n-d}{n}\,\sigma^2.\,}
+\]
+On retrouve bien la Proposition 1. (On peut noter que $\Tr(P)=d$ est cohérent
+avec le fait que $P$ projette sur $\mathrm{Im}(X)$, de dimension $d$ : la trace
+d'un projecteur orthogonal est la dimension de son image.)
+
+\subsection*{Question 7: Espérance de $\lVert y-X\hat\theta\rVert^2/(n-d)$}
+
+On a $\lVert y-X\hat\theta\rVert^2=n\,R_n(\hat\theta)$, donc
+$\E\big[\lVert y-X\hat\theta\rVert^2\big]=n\,\E[R_n(\hat\theta)]=n\cdot\frac{n-d}{n}\sigma^2=(n-d)\sigma^2$.
+Par conséquent
+\[
+    \E\!\left[\frac{\lVert y-X\hat\theta\rVert^2}{n-d}\right]=\sigma^2 .
+\]
+Autrement dit, $\hat\sigma^2:=\dfrac{\lVert y-X\hat\theta\rVert^2}{n-d}$ est un
+estimateur \textbf{sans biais} de $\sigma^2$. Le dénominateur $n-d$ (et non $n$)
+corrige précisément l'optimisme mis en évidence à la Q1.
+
+\subsection*{Question 8: Estimation numérique de $\sigma^2$}
+
+Le script \texttt{exercice3/simulation.py} simule un modèle linéaire à design
+fixe ($n=200$, $d=50$, $\sigma^2=4$, $X$ et $\theta^{*}$ tirés une fois), répète
+$2000$ fois le tirage du bruit, ajuste l'OLS et calcule
+$\hat\sigma^2=\lVert y-X\hat\theta\rVert^2/(n-d)$.
+
+\begin{center}
+\begin{tabular}{lc}
+\toprule
+Quantité & Valeur \\
+\midrule
+$\sigma^2$ théorique                              & $4{,}0000$ \\
+moyenne de $\hat\sigma^2$                          & $4{,}0041$ \\
+écart-type de $\hat\sigma^2$                       & $0{,}4441$ \\
+estimateur biaisé $\lVert\cdot\rVert^2/n$ (moyenne) & $3{,}0031$ \\
+valeur attendue $\frac{n-d}{n}\sigma^2$            & $3{,}0000$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Conclusion.} La moyenne de $\hat\sigma^2$ ($4{,}004$) coïncide avec la
+valeur théorique $\sigma^2=4$ (biais relatif $0{,}1\%$), ce qui valide le
+caractère sans biais de l'estimateur. À l'inverse, l'estimateur naïf qui divise
+par $n$ donne $3{,}003\approx\frac{n-d}{n}\sigma^2=3$ : il sous-estime
+systématiquement $\sigma^2$, exactement comme le prédit la théorie.
+
+\end{document}
