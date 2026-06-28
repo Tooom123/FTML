@@ -262,11 +262,11 @@ $\hat\theta=(X^TX)^{-1}X^Ty$. On rappelle l'objectif (Proposition 1) :
     \E\big[R_n(\hat\theta)\big]=\frac{n-d}{n}\,\sigma^2,
     \qquad\text{où } R_n(\theta)=\tfrac1n\lVert y-X\theta\rVert^2 .
 \]
-\emph{Remarque de notation.} Il s'agit bien ici de l'espérance du risque
-\emph{empirique} (sur l'échantillon d'apprentissage) $R_n(\hat\theta)$, que les
-questions 2 à 6 calculent explicitement, et qui vaut $\frac{n-d}{n}\sigma^2$
-(à distinguer du risque de design fixe $R_X(\hat\theta)$, dont l'espérance vaut
-$\frac{n+d}{n}\sigma^2$).
+\emph{Remarque.} Les questions 2 à 6 calculent l'espérance du risque
+\emph{empirique} (in-sample) $\E[R_n(\hat\theta)]=\frac{n-d}{n}\sigma^2$. Le
+risque de généralisation, évalué sur un échantillon indépendant de même design,
+vaudrait au contraire $\frac{n+d}{n}\sigma^2>\sigma^2$ : c'est l'écart entre
+erreur d'apprentissage et erreur de test.
 
 \subsection*{Question 1: Comparaison au risque de Bayes}
 

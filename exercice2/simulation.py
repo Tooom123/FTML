@@ -27,5 +27,16 @@ def main():
     R_sq_of_mean = np.mean((y - f_quad(x)) ** 2)
     R_sq_of_median = np.mean((y - f_abs(x)) ** 2)
 
+    theo_R_abs_median = LN2
+    theo_R_abs_mean = 2.0 / np.e
+
+    print(f"R_abs(f*_abs) simu = {R_abs_of_median:.4f}, theo = {theo_R_abs_median:.4f}")
+    print(f"R_abs(f*_sq)  simu = {R_abs_of_mean:.4f}, theo = {theo_R_abs_mean:.4f}")
+    print(f"R_sq(f*_abs)  simu = {R_sq_of_median:.4f}")
+    print(f"R_sq(f*_sq)   simu = {R_sq_of_mean:.4f}")
+    print(f"R_abs(f*_abs) < R_abs(f*_sq) ? {R_abs_of_median < R_abs_of_mean}")
+    print(f"R_sq(f*_sq) < R_sq(f*_abs) ?   {R_sq_of_mean < R_sq_of_median}")
+
+
 if __name__ == "__main__":
     main()
