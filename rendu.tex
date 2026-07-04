@@ -10,6 +10,8 @@
 \usepackage{hyperref}
 \usepackage{xcolor}
 \usepackage{textcomp}
+\usepackage{graphicx}
+\usepackage{float}
 \geometry{margin=2.4cm}
 
 \newcommand{\unit}[1]{\,\mathrm{#1}}
@@ -32,7 +34,7 @@
 \newtheorem{prop}{Proposition}
 
 \title{\textbf{FTML 2026}\\[2mm]
-\large Exercices 1 à 5}
+\large Exercices 1 à 7}
 \author{}
 \date{}
 
@@ -40,9 +42,11 @@
 \maketitle
 
 \noindent
-Ce document répond aux exercices 1 à 5 du projet. Les exercices 1, 2 et 3 sont
-essentiellement mathématiques; les exercices 4 et 5 sont des exercices de code.
-Sauf mention contraire, on note
+Ce rapport traite les exercices 1 à 7 du projet. Les exercices 1, 2 et 3 sont des
+exercices de mathématiques. Les exercices 4 à 7 sont des exercices de code : le
+détail du code et des graphiques est dans les notebooks correspondants, on
+résume ici la démarche suivie et les résultats obtenus.
+Sauf indication contraire, on note
 $\lVert\cdot\rVert=\lVert\cdot\rVert_2$.
 
 \tableofcontents
@@ -158,7 +162,7 @@ distinguer, il faut une loi conditionnelle \textbf{asymétrique}.
 $Z$ indépendant de $X$. La loi exponentielle est asymétrique : pour $Z\sim\mathcal{E}(1)$,
 $\E[Z]=1$ et $\med(Z)=\ln 2\approx 0{,}693$.
 
-D'après le cours et la Q2 ci-dessous, on a pour chaque $x$
+D'après le cours et la Q2 qui suit, on a pour chaque $x$
 \[
     \fstar_{\ell_\text{sq}}(x)=\E[Y\mid X=x]=2x+1,
     \qquad
@@ -263,7 +267,8 @@ $\hat\theta=(X^TX)^{-1}X^Ty$. On rappelle l'objectif (Proposition 1) :
     \qquad\text{où } R_n(\theta)=\tfrac1n\lVert y-X\theta\rVert^2 .
 \]
 \emph{Remarque.} Les questions 2 à 6 calculent l'espérance du risque
-\emph{empirique} (in-sample) $\E[R_n(\hat\theta)]=\frac{n-d}{n}\sigma^2$. Le
+\emph{empirique}, mesuré directement sur les données d'entraînement,
+$\E[R_n(\hat\theta)]=\frac{n-d}{n}\sigma^2$. Le
 risque de généralisation, évalué sur un échantillon indépendant de même design,
 vaudrait au contraire $\frac{n+d}{n}\sigma^2>\sigma^2$ : c'est l'écart entre
 erreur d'apprentissage et erreur de test.
@@ -282,13 +287,13 @@ Bayes}, égal à la variance du bruit irréductible. On compare :
 Interprétation : c'est l'\emph{optimisme} de l'erreur d'apprentissage. L'OLS
 ajuste ses $d$ paramètres sur les données d'entraînement et capte donc une partie
 du bruit de ces données ; l'erreur mesurée \emph{sur l'échantillon d'apprentissage}
-sous-estime l'erreur réelle, exactement d'un facteur $\frac{d}{n}\sigma^2$.
+donne une valeur plus basse que l'erreur réelle, exactement d'un facteur $\frac{d}{n}\sigma^2$.
 \begin{itemize}[nosep]
   \item Quand $d\ll n$ : $\E[R_n(\hat\theta)]\to\sigma^2$, l'erreur d'apprentissage
         est une bonne estimation de l'erreur réelle.
   \item Quand $d\to n$ : $\E[R_n(\hat\theta)]\to 0$, le modèle interpole les
-        données (sur-apprentissage) : l'erreur d'entraînement devient nulle bien
-        que l'erreur réelle ne le soit pas.
+        données (il apprend le bruit par cœur) : l'erreur d'entraînement devient
+        nulle bien que l'erreur réelle ne le soit pas.
 \end{itemize}
 
 \subsection*{Question 2: Réécriture avec la matrice de projection}
@@ -390,7 +395,7 @@ Quantité & Valeur \\
 \midrule
 $\sigma^2$ théorique                              & $4{,}0000$ \\
 moyenne de $\hat\sigma^2$                          & $4{,}0041$ \\
-écart-type de $\hat\sigma^2$                       & $0{,}4441$ \\
+écart type de $\hat\sigma^2$                       & $0{,}4441$ \\
 estimateur biaisé $\lVert\cdot\rVert^2/n$ (moyenne) & $3{,}0031$ \\
 valeur attendue $\frac{n-d}{n}\sigma^2$            & $3{,}0000$ \\
 \bottomrule
@@ -400,7 +405,254 @@ valeur attendue $\frac{n-d}{n}\sigma^2$            & $3{,}0000$ \\
 \paragraph{Conclusion.} La moyenne de $\hat\sigma^2$ ($4{,}004$) coïncide avec la
 valeur théorique $\sigma^2=4$ (biais relatif $0{,}1\%$), ce qui valide le
 caractère sans biais de l'estimateur. À l'inverse, l'estimateur naïf qui divise
-par $n$ donne $3{,}003\approx\frac{n-d}{n}\sigma^2=3$ : il sous-estime
-systématiquement $\sigma^2$, exactement comme le prédit la théorie.
+par $n$ donne $3{,}003\approx\frac{n-d}{n}\sigma^2=3$ : il donne toujours une
+valeur plus basse que $\sigma^2$, exactement comme le prédit la théorie.
+
+% =====================================================================
+\section{Régression sur un jeu de données fourni}
+% =====================================================================
+
+Exercice de code. Le détail du code et des graphiques est dans le notebook de
+l'exercice 4, on résume ici la démarche suivie et les résultats obtenus.
+
+\paragraph{Cadre.} Le jeu de données est composé de quatre tableaux :
+$X_{\text{train}}$ et $X_{\text{test}}$ dans $\R^{200\times 200}$,
+$y_{\text{train}}$ et $y_{\text{test}}$ dans $\R^{200}$. On a donc autant de
+variables que d'observations ($d=n=200$), une situation délicate pour une
+régression classique. On compare trois modèles : régression linéaire, Ridge et
+Lasso. Les variables sont standardisées, en calculant la moyenne et l'écart type
+uniquement sur le train, puis en les appliquant au test. Le coefficient de
+régularisation de Ridge et de Lasso est choisi par validation croisée à $5$
+plis, toujours sur le train.
+
+\paragraph{Résultats.}
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Modèle & $R^2$ train & $R^2$ test & MSE test \\
+\midrule
+Régression linéaire & $1{,}0000$  & $-9{,}9240$ & $8{,}0421$ \\
+Ridge               & $0{,}9891$  & $0{,}7141$  & $0{,}2105$ \\
+Lasso               & $0{,}9593$  & $0{,}9231$  & $0{,}0566$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/ex4_pred_vs_actual.png}
+\caption{Valeurs prédites en fonction des valeurs réelles sur le jeu de test,
+pour les trois modèles.}
+\end{figure}
+
+\paragraph{Conclusion.} Le Lasso donne le meilleur résultat, avec un $R^2$ de
+test de $0{,}923$, largement supérieur à l'objectif de $0{,}88$ et proche du
+$R^2$ d'environ $0{,}92$ annoncé pour le prédicteur de Bayes. Il ne garde que
+$38$ variables sur les $200$ de départ. La figure montre bien le problème : la
+régression linéaire colle parfaitement au train ($R^2=1$) mais devient très
+mauvaise sur le test ($R^2$ fortement négatif), car avec $d=n$ elle a la place
+d'apprendre le bruit du train par cœur. Ridge règle en partie ce problème mais
+garde toutes les variables, ce qui limite ses performances. Lasso fait mieux
+car il met à zéro la plupart des coefficients, ce qui montre que seules
+quelques variables comptent vraiment pour prédire $y$.
+
+% =====================================================================
+\section{Classification sur un jeu de données fourni}
+% =====================================================================
+
+Exercice de code. Le détail du code et des graphiques est dans le notebook de
+l'exercice 5, on résume ici la démarche suivie et les résultats obtenus.
+
+\paragraph{Cadre.} C'est un problème de classification binaire, avec
+$X_{\text{train}}$ et $X_{\text{test}}$ dans $\R^{2000\times 30}$. Les classes
+sont presque équilibrées : prédire toujours la classe majoritaire donne déjà une
+accuracy de test de $0{,}559$, c'est notre repère de base. On compare trois
+modèles de familles différentes : régression logistique, $K$ plus proches
+voisins et SVC à noyau RBF. Les variables sont standardisées et les
+hyperparamètres sont choisis par recherche sur grille en validation croisée à
+$5$ plis, sur le train uniquement.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\linewidth]{figures/ex5_pca.png}
+\caption{Projection PCA 2D du jeu d'entraînement, coloriée par classe.}
+\end{figure}
+
+Les deux classes se recouvrent beaucoup sur cette projection, il n'y a pas de
+séparation nette. Cela laisse penser qu'une accuracy proche de $1$ ne sera pas
+possible sur ce jeu de données.
+
+\paragraph{Résultats.}
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Modèle & Accuracy CV & Accuracy train & Accuracy test \\
+\midrule
+Régression logistique   & $0{,}716$ & $0{,}721$ & $0{,}745$ \\
+$K$ plus proches voisins & $0{,}747$ & $0{,}767$ & $0{,}778$ \\
+SVC (noyau RBF)          & $0{,}770$ & $1{,}000$ & $0{,}800$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\linewidth]{figures/ex5_accuracy_train_test.png}
+\caption{Accuracy train et test par modèle, comparée à l'objectif de $0{,}85$.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.55\linewidth]{figures/ex5_confusion_matrix.png}
+\caption{Matrice de confusion du SVC (meilleur modèle) sur le jeu de test.}
+\end{figure}
+
+\paragraph{Conclusion.} Le SVC à noyau RBF est le meilleur modèle, avec une
+accuracy de test de $0{,}800$. Aucun des trois modèles ne dépasse vraiment ce
+niveau (entre $0{,}745$ et $0{,}800$ de test) : les classes se recouvrent trop,
+comme on le voit sur la projection PCA, ce qui fixe une limite autour de
+$0{,}20$ d'erreur quelle que soit la méthode utilisée. On remarque aussi que le SVC apprend le train par
+cœur (accuracy de $1{,}000$) sans que cela l'empêche de bien généraliser, ce qui
+montre que le problème vient des données et non d'un modèle mal réglé.
+L'objectif de $0{,}85$ n'est donc pas atteint ici, même après avoir réglé les
+hyperparamètres par validation croisée sur tous les modèles recommandés.
+
+% =====================================================================
+\section{Application de l'apprentissage supervisé}
+% =====================================================================
+
+Exercice de code. Le détail du code et des graphiques est dans le notebook de
+l'exercice 6, on résume ici la démarche suivie et les résultats obtenus.
+
+\paragraph{Cadre.} Le jeu de données vient de Kaggle (\emph{Smartphone
+Specifications and Pricing Dataset}) et contient $1\,000\,000$ de smartphones
+générés de façon synthétique, décrits par $33$ variables (marque, processeur,
+RAM, écran, batterie, appareils photo, etc.). Le but est de prédire le prix en
+roupies indiennes à partir des caractéristiques techniques du téléphone. C'est
+un problème de régression qui peut par exemple aider à fixer le prix d'un
+nouveau modèle ou à repérer une annonce mal placée sur le marché.
+
+\paragraph{Prétraitement.} La variable qui liste les types de capteurs photo
+est transformée en plusieurs colonnes binaires, une par type de capteur. Les
+autres variables catégorielles sont transformées en indicatrices binaires, une
+colonne par catégorie. Les variables numériques sont standardisées. On sépare
+le jeu de données en train et test, avec $80\%$ pour le train et $20\%$ pour le
+test.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/ex6_correlation.png}
+\caption{Corrélations entre variables numériques et le prix. Les scores CPU et
+GPU se distinguent nettement des autres variables.}
+\end{figure}
+
+\paragraph{Modèles.} On compare une régression Ridge (la classe
+\texttt{RidgeCV}, qui choisit le coefficient de régularisation par validation
+croisée à $5$ plis) et un modèle de gradient boosting par histogrammes
+(\texttt{HistGradientBoostingRegressor}), adapté à un jeu d'un million de
+lignes. Son taux d'apprentissage est comparé par validation croisée à $3$ plis
+sur un échantillon du train.
+
+\paragraph{Résultats.}
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Modèle & $R^2$ train & $R^2$ test & MAE test (Rs) & temps d'entraînement (s) \\
+\midrule
+Ridge                    & $0{,}9863$ & $0{,}9865$ & $2326$ & $6{,}9$ \\
+HistGradientBoosting     & $0{,}9881$ & $0{,}9881$ & $2155$ & $9{,}2$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/ex6_pred_vs_actual.png}
+\caption{Prix prédit en fonction du prix réel sur le jeu de test, pour les deux
+modèles.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\linewidth]{figures/ex6_ridge_coefs.png}
+\caption{Coefficients Ridge les plus importants (variables standardisées).}
+\end{figure}
+
+\paragraph{Conclusion.} Les deux modèles généralisent bien, les scores sont
+presque les mêmes sur le train et sur le test. Le Ridge, qui est pourtant un
+modèle linéaire, explique déjà $98{,}6\%$ de la variance du prix : dans ce jeu
+de données, le prix suit une relation presque linéaire avec les
+caractéristiques du téléphone, surtout les scores de processeur et de carte
+graphique. Le gradient boosting fait un peu mieux ($+0{,}2$ point de $R^2$, MAE
+réduite d'environ $7\%$), ce qui montre qu'il reste quelques effets non
+linéaires que le modèle linéaire ne capture pas. Le gain reste modeste pour un
+temps d'entraînement environ un tiers plus long.
+
+% =====================================================================
+\section{Application de l'apprentissage non supervisé}
+% =====================================================================
+
+Exercice de code. Le détail du code et des graphiques est dans le notebook de
+l'exercice 7, on résume ici la démarche suivie et les résultats obtenus.
+
+\paragraph{Cadre.} Le jeu de données vient de Kaggle (\emph{Spotify Tracks
+Dataset}) et contient $114\,000$ morceaux répartis sur $114$ genres, décrits
+par $12$ variables audio : dansabilité, énergie, intensité sonore (en
+décibels), tempo (en battements par minute), valence, etc. Le but est de
+regrouper les morceaux par profil audio, sans utiliser le genre, puis de
+vérifier si les groupes obtenus ont un sens musical. C'est un problème de
+clustering.
+
+\paragraph{Méthode.} Les variables sont standardisées. Une projection PCA en
+deux dimensions ne montre aucun groupe vraiment séparé, la musique forme plutôt
+un continuum. Le nombre de clusters $k=8$ est choisi en combinant la méthode du
+coude, le score de silhouette pour KMeans et le critère BIC pour un mélange
+gaussien (GMM). On compare ensuite KMeans et un GMM à covariance pleine avec
+cette valeur de $k$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/ex7_elbow_silhouette.png}
+\caption{Choix du nombre de clusters $k$ : méthode du coude et score de
+silhouette. Aucun coude net n'apparaît, cohérent avec une structure continue.}
+\end{figure}
+
+\paragraph{Résultats.}
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Modèle & Score de silhouette & ARI (vs.\ genres) \\
+\midrule
+KMeans ($k=8$)       & $0{,}154$ & $0{,}012$ \\
+GMM plein ($k=8$)    & $0{,}056$ & $0{,}008$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/ex7_clusters_pca.png}
+\caption{Projection PCA 2D des morceaux, coloriée par cluster, pour KMeans et
+pour GMM.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/ex7_cluster_profile.png}
+\caption{Profil audio moyen par cluster KMeans (valeurs normalisées), utilisé
+pour l'interprétation musicale des groupes obtenus.}
+\end{figure}
+
+\paragraph{Conclusion.} Le score de silhouette est faible pour les deux
+méthodes, ce qui confirme qu'il n'y a pas de clusters bien séparés : comme le
+montrait la projection PCA, la musique forme un continuum plutôt que des
+catégories bien distinctes. L'ARI est bas aussi, mais c'est normal puisque $8$
+clusters ne peuvent pas retrouver $114$ genres, ce n'était de toute façon pas
+l'objectif. Malgré cela, en regardant les genres dominants dans chaque cluster,
+on trouve des regroupements qui ont un sens musical : un cluster plutôt
+acoustique, un cluster électronique et dansant, un cluster où les morceaux sont
+surtout parlés, proche du rap. Le clustering capture donc une structure plus
+large que le genre, qui peut servir par exemple pour des recommandations ou des
+playlists automatiques.
 
 \end{document}

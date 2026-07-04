@@ -1,3 +1,5 @@
+"""Compare le predicteur de Bayes f* et un predicteur constant, pour la perte quadratique."""
+
 import numpy as np
 
 A = 0.3
@@ -8,6 +10,7 @@ RNG = np.random.default_rng(0)
 
 
 def sample(n):
+    """Tire n couples (x, y) selon Y = A*x + B + bruit gaussien."""
     x = RNG.uniform(X_LOW, X_HIGH, size=n)
     eps = RNG.normal(0.0, SIGMA, size=n)
     y = A * x + B + eps
@@ -15,10 +18,12 @@ def sample(n):
 
 
 def f_star(x):
+    """Predicteur de Bayes pour la perte quadratique."""
     return A * x + B
 
 
 def main():
+    """Calcule et affiche les risques theoriques et empiriques de f* et du predicteur constant."""
     n_test = 2_000_000
 
     var_x = (X_HIGH - X_LOW) ** 2 / 12.0

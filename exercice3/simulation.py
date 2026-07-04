@@ -1,13 +1,17 @@
+"""Estime sigma^2 par OLS dans un modele lineaire a design fixe, et verifie que l'estimateur est sans biais."""
+
 import numpy as np
 
 RNG = np.random.default_rng(0)
 
 
 def ols(X, y):
+    """Resout les equations normales pour obtenir theta_hat."""
     return np.linalg.solve(X.T @ X, X.T @ y)
 
 
 def estimate_sigma2(n, d, sigma_true, n_repeat=2000):
+    """Repete n_repeat fois le tirage du bruit et calcule sigma_hat^2 a chaque fois."""
     X = RNG.normal(size=(n, d))
     theta_star = RNG.normal(size=d)
 
@@ -22,6 +26,7 @@ def estimate_sigma2(n, d, sigma_true, n_repeat=2000):
 
 
 def main():
+    """Compare la moyenne des estimations de sigma^2 a sa valeur theorique."""
     n, d = 200, 50
     sigma_true = 2.0
     sigma2_true = sigma_true ** 2

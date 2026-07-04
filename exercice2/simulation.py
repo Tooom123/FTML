@@ -1,3 +1,5 @@
+"""Compare le predicteur de Bayes pour la perte quadratique (moyenne) et pour la perte absolue (mediane)."""
+
 import numpy as np
 
 RNG = np.random.default_rng(0)
@@ -5,6 +7,7 @@ LN2 = np.log(2.0)
 
 
 def sample(n):
+    """Tire n couples (x, y) avec Y = 2x + bruit exponentiel."""
     x = RNG.uniform(0.0, 1.0, size=n)
     z = RNG.exponential(scale=1.0, size=n)
     y = 2.0 * x + z
@@ -12,14 +15,17 @@ def sample(n):
 
 
 def f_quad(x):
+    """Predicteur de Bayes pour la perte quadratique (moyenne conditionnelle)."""
     return 2.0 * x + 1.0
 
 
 def f_abs(x):
+    """Predicteur de Bayes pour la perte absolue (mediane conditionnelle)."""
     return 2.0 * x + LN2
 
 
 def main():
+    """Calcule et affiche les risques absolu et quadratique des deux predicteurs."""
     x, y = sample(5_000_000)
 
     R_abs_of_median = np.mean(np.abs(y - f_abs(x)))
